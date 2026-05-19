@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/app/globals.css"],"sourcesContent":[":root {\n  --background: #ffffff;\n  --foreground: #1a1a1a;\n}\n\n* {\n  box-sizing: border-box;\n  padding: 0;\n  margin: 0;\n}\n\nhtml,\nbody {\n  height: 100%;\n  width: 100%;\n  overflow: hidden;\n  background-color: var(--background);\n  color: var(--foreground);\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\na {\n  color: inherit;\n  text-decoration: none;\n}\n"],"names":[],"mappings":"AAAA;;;;;AAKA;;;;;;AAMA;;;;;;;;;;;AAYA"}}]
+}

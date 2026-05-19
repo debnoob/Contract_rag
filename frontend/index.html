@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contract Assistant</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="panel">
+        <h1>Contract Assistant</h1>
+        <p class="muted">Minimal RAG workspace</p>
+      </div>
+
+      <div class="panel">
+        <label class="label" for="apiRoot">Backend API</label>
+        <input id="apiRoot" type="text" placeholder="http://localhost:8000/api" />
+        <button id="saveApiRoot" class="btn secondary">Save</button>
+      </div>
+
+      <div class="panel">
+        <h2>Upload</h2>
+        <form id="uploadForm">
+          <input id="fileInput" type="file" accept=".pdf,.xlsx,.xls" required />
+          <input id="insurerInput" type="text" placeholder="Insurer" value="General" required />
+          <input id="categoryInput" type="text" placeholder="Category" value="Policy" required />
+          <button id="uploadBtn" class="btn" type="submit">Upload File</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="row-between">
+          <h2>Documents</h2>
+          <button id="refreshDocsBtn" class="btn secondary small" type="button">Refresh</button>
+        </div>
+        <div id="docsList" class="docs-list"></div>
+      </div>
+    </aside>
+
+    <main class="chat-main">
+      <div id="chatMessages" class="chat-messages"></div>
+      <form id="chatForm" class="chat-input-row">
+        <textarea id="chatInput" rows="1" placeholder="Ask about your uploaded documents..." required></textarea>
+        <button id="sendBtn" class="btn" type="submit">Send</button>
+      </form>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
