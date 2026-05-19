@@ -3,6 +3,8 @@ import { Send, Upload, FileText, Trash2, Bot, User, Menu } from 'lucide-react';
 import axios from 'axios';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,6 +18,7 @@ type Message = {
 };
 
 type Document = {
+  id: string;
   filename: string;
 };
 
@@ -42,8 +45,8 @@ export default function App() {
 
   const fetchDocuments = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/files`);
-      setDocuments(res.data.files);
+      const res = await axios.get(`${API_BASE}/api/documents`);
+      setDocuments(res.data);
     } catch (e) {
       console.error("Failed to fetch documents", e);
     }
@@ -58,7 +61,7 @@ export default function App() {
     formData.append('file', file);
 
     try {
-      await axios.post(`${API_BASE}/upload`, formData);
+      await axios.post(`${API_BASE}/api/upload`, formData);
       await fetchDocuments();
       setMessages(prev => [...prev, { role: 'assistant', content: `Successfully uploaded ${file.name}. What would you like to know about it?` }]);
     } catch (e) {
@@ -70,9 +73,9 @@ export default function App() {
     }
   };
 
-  const handleDelete = async (filename: string) => {
+  const handleDelete = async (docId: string, filename: string) => {
     try {
-      await axios.delete(`${API_BASE}/files/${filename}`);
+      await axios.delete(`${API_BASE}/api/documents/${docId}`);
       await fetchDocuments();
       setMessages(prev => [...prev, { role: 'assistant', content: `Deleted ${filename}.` }]);
     } catch (e) {
@@ -90,7 +93,7 @@ export default function App() {
     setIsLoading(true);
 
     try {
-      const res = await axios.post(`${API_BASE}/query`, { query: userMsg });
+      const res = await axios.post(`${API_BASE}/api/query`, { query: userMsg });
       setMessages(prev => [...prev, { role: 'assistant', content: res.data.answer }]);
     } catch (e) {
       console.error("Query failed", e);
@@ -123,14 +126,14 @@ export default function App() {
           {documents.length === 0 ? (
             <p className="text-sm text-muted text-center pt-8">No documents uploaded</p>
           ) : (
-            documents.map((doc, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-border bg-secondary/50 group hover:border-accent/30 transition">
+            documents.map((doc) => (
+              <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-secondary/50 group hover:border-accent/30 transition">
                 <div className="flex items-center space-x-3 overflow-hidden">
                   <FileText className="text-accent shrink-0" size={18} />
                   <span className="text-sm truncate font-medium text-primary">{doc.filename}</span>
                 </div>
                 <button 
-                  onClick={() => handleDelete(doc.filename)}
+                  onClick={() => handleDelete(doc.id, doc.filename)}
                   className="p-1.5 text-muted hover:text-red-500 hover:bg-white rounded-md transition opacity-0 group-hover:opacity-100"
                   title="Delete document"
                 >
@@ -186,24 +189,32 @@ export default function App() {
               <div key={idx} className={cn("flex space-x-4 max-w-prose", msg.role === 'user' ? "ml-auto flex-row-reverse space-x-reverse" : "mr-auto")}>
                 <div className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                  msg.role === 'user' ? "bg-accent/10 text-accent font-medium mt-1" : "bg-primary text-white"
+                  msg.role === 'user' ? "bg-[#2d2d2d] text-white font-medium mt-1" : "bg-transparent text-accent"
                 )}>
-                  {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+                  {msg.role === 'user' ? <User size={16} /> : <Bot size={24} />}
                 </div>
                 <div className={cn(
                   "px-5 py-3.5 rounded-2xl text-[15px] leading-relaxed",
                   msg.role === 'user' 
-                    ? "bg-secondary text-primary rounded-tr-sm" 
-                    : "bg-transparent text-primary whitespace-pre-wrap"
+                    ? "bg-[#f3f1e9] text-primary rounded-tr-sm" 
+                    : "bg-transparent text-primary"
                 )}>
-                  {msg.content}
+                  {msg.role === 'user' ? (
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  ) : (
+                    <div className="prose prose-sm md:prose-base prose-neutral max-w-none prose-p:leading-relaxed prose-pre:bg-secondary prose-pre:text-primary prose-a:text-accent hover:prose-a:text-accentHover">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
             {isLoading && (
               <div className="flex space-x-4 max-w-prose mr-auto">
-                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center shrink-0">
-                  <Bot size={16} />
+                <div className="w-8 h-8 flex items-center justify-center shrink-0 bg-transparent text-accent">
+                  <Bot size={24} />
                 </div>
                 <div className="px-5 py-3.5 flex items-center space-x-1.5 h-12">
                   <div className="w-2 h-2 rounded-full bg-muted/60 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -234,22 +245,22 @@ export default function App() {
                     handleSubmit(e);
                   }
                 }}
-                placeholder="Ask about your contracts..."
-                className="w-full bg-secondary text-primary placeholder:text-muted rounded-2xl py-3.5 pl-5 pr-12 focus:outline-none focus:ring-1 focus:ring-accent/50 resize-none max-h-[200px] scrollbar-hide"
+                placeholder="Ask Claude or anything about your contracts..."
+                className="w-full bg-[#f3f1e9] text-primary placeholder:text-muted rounded-2xl py-3.5 pl-5 pr-12 focus:outline-none focus:bg-[#f3f1e9] resize-none max-h-[200px] scrollbar-hide shadow-sm"
                 rows={1}
                 disabled={isLoading}
               />
               <button 
                 type="submit" 
                 disabled={!input.trim() || isLoading}
-                className="absolute right-3 mb-2.5 p-1.5 text-white bg-accent hover:bg-accentHover rounded-lg transition disabled:bg-muted/40 disabled:text-muted/60 disabled:cursor-not-allowed"
+                className="absolute right-3 mb-2.5 p-1.5 text-primary hover:bg-[#e4e2da] rounded-lg transition disabled:text-muted/40 disabled:hover:bg-transparent"
               >
                 <Send size={18} />
               </button>
             </form>
-            <div className="text-center mt-2.5">
-              <span className="text-[11px] text-muted tracking-wide">
-                AI can make mistakes. Verify important terms.
+            <div className="text-center mt-3">
+              <span className="text-[12px] text-muted tracking-wide font-serif italic">
+                Claude can make mistakes. Please double-check responses.
               </span>
             </div>
           </div>

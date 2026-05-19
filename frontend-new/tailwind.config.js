@@ -7,19 +7,22 @@ export default {
   theme: {
     extend: {
       colors: {
-        background: '#f8f9fa',
-        panel: '#ffffff',
-        border: '#e5e7eb',
-        primary: '#18181b', // almost black
-        secondary: '#f4f4f5',
-        muted: '#71717a',
-        accent: '#3b82f6',
-        accentHover: '#2563eb'
+        background: '#fdfbfa',
+        panel: '#fdfbfa',
+        border: '#e4e2df',
+        primary: '#242424',
+        userBubble: '#f2f0e9',
+        muted: '#737373',
+        accent: '#d97757',
+        accentHover: '#c26244'
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
       }
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }
