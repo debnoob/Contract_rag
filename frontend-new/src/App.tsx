@@ -232,84 +232,104 @@ export default function App() {
       {/* Sidebar */}
       <aside 
         className={cn(
-          "absolute inset-y-0 left-0 z-20 w-72 bg-panel border-r border-border transition-transform duration-300 ease-in-out md:static md:translate-x-0 flex flex-col",
+          "absolute inset-y-0 left-0 z-20 w-72 bg-[#F7F5F0] border-r border-[#e4e2df]/60 transition-transform duration-300 ease-in-out md:static md:translate-x-0 flex flex-col text-slate-800 shadow-sm",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="h-14 flex items-center justify-between px-4 border-b border-border shrink-0">
-          <div className="flex w-full items-center p-1 space-x-1 bg-secondary/50 rounded-lg">
+        <div className="h-14 flex items-center justify-between px-4 border-b border-[#e4e2df]/60 shrink-0">
+          <div className="flex w-full items-center p-1 space-x-1 bg-[#e4e2df]/40 rounded-xl">
             <button 
               onClick={() => setActiveTab('chats')} 
-              className={cn("flex-1 flex items-center justify-center space-x-2 py-1.5 rounded-md text-sm transition font-medium", activeTab === 'chats' ? 'bg-panel text-primary shadow-sm border border-border/50' : 'text-muted hover:text-primary')}
+              className={cn(
+                "flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-sm transition-all duration-200 font-medium", 
+                activeTab === 'chats' 
+                  ? 'bg-white text-[#111827] font-bold shadow-sm border border-[#e4e2df]/30' 
+                  : 'text-[#8a8a8a] hover:text-[#111827]'
+              )}
             >
-              <MessageSquare size={16} />
+              <MessageSquare size={16} className={cn("transition-colors", activeTab === 'chats' ? "text-[#8A5E4D]" : "text-[#8a8a8a] hover:text-[#111827]")} />
               <span>Chats</span>
             </button>
             <button 
               onClick={() => setActiveTab('documents')} 
-              className={cn("flex-1 flex items-center justify-center space-x-2 py-1.5 rounded-md text-sm transition font-medium", activeTab === 'documents' ? 'bg-panel text-primary shadow-sm border border-border/50' : 'text-muted hover:text-primary')}
+              className={cn(
+                "flex-1 flex items-center justify-center space-x-2 py-2 rounded-lg text-sm transition-all duration-200 font-medium", 
+                activeTab === 'documents' 
+                  ? 'bg-white text-[#111827] font-bold shadow-sm border border-[#e4e2df]/30' 
+                  : 'text-[#8a8a8a] hover:text-[#111827]'
+              )}
             >
-              <FileText size={16} />
+              <FileText size={16} className={cn("transition-colors", activeTab === 'documents' ? "text-[#8A5E4D]" : "text-[#8a8a8a] hover:text-[#111827]")} />
               <span>Docs</span>
             </button>
           </div>
           <button 
-            className="md:hidden p-1 text-muted hover:text-primary transition ml-2"
+            className="md:hidden p-1 text-slate-500 hover:text-[#111827] transition ml-2"
             onClick={() => setSidebarOpen(false)}
           >
              <Menu size={20} />
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-hide">
           {activeTab === 'chats' ? (
             <>
-              <button onClick={createNewChat} className="w-full flex items-center justify-center space-x-2 p-2.5 rounded-lg border border-dashed border-border text-muted hover:text-primary hover:border-primary hover:bg-secondary/30 transition mb-4">
-                <Plus size={16} />
-                <span className="text-sm font-medium">New Chat</span>
+              <button onClick={createNewChat} className="w-full flex items-center justify-center space-x-2 p-2.5 rounded-xl border border-dashed border-[#e4e2df] text-slate-500 hover:text-[#111827] hover:border-slate-400 hover:bg-[#e4e2df]/20 transition-all duration-200 ease-out group">
+                <div className="flex items-center justify-center space-x-2 transition-transform duration-200 ease-out group-hover:translate-x-[2px]">
+                  <Plus size={16} />
+                  <span className="text-sm font-medium">New Chat</span>
+                </div>
               </button>
               {chats.length === 0 ? (
-                <p className="text-sm text-muted text-center pt-8">No past chats</p>
+                <p className="text-sm text-slate-400 text-center pt-8">No past chats</p>
               ) : (
-                chats.map((chat) => (
-                  <button 
-                    key={chat.id} 
-                    onClick={() => selectChat(chat.id)}
-                    className={cn(
-                      "w-full flex items-center justify-between text-left p-3 rounded-lg transition border group", 
-                      currentChatId === chat.id 
-                        ? 'bg-secondary/80 border-border shadow-sm' 
-                        : 'border-transparent hover:bg-secondary/50'
-                    )}
-                  >
-                    <div className="flex items-center overflow-hidden mr-2">
-                      <MessageSquare className="text-accent shrink-0 mr-3" size={18} />
-                      <span className="text-sm truncate font-medium text-primary">{chat.title}</span>
-                    </div>
-                    <div 
-                      onClick={(e) => handleDeleteChat(e, chat.id)}
-                      className="p-1.5 text-muted hover:text-red-500 hover:bg-white rounded-md transition opacity-0 group-hover:opacity-100"
-                      title="Delete chat"
+                chats.map((chat) => {
+                  const isActive = currentChatId === chat.id;
+                  return (
+                    <button 
+                      key={chat.id} 
+                      onClick={() => selectChat(chat.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between text-left p-3 rounded-xl transition-all duration-200 ease-out relative group overflow-hidden", 
+                        isActive 
+                          ? 'bg-[#8A5E4D]/8 text-[#111827] shadow-sm border border-[#8A5E4D]/10' 
+                          : 'border-transparent hover:bg-[#e4e2df]/25'
+                      )}
                     >
-                      <Trash2 size={16} />
-                    </div>
-                  </button>
-                ))
+                      {/* Premium Deep Clay Glowing Left Indicator */}
+                      {isActive && (
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-7 bg-[#8A5E4D] rounded-full shadow-[0_0_8px_rgba(138,94,77,0.35)]" />
+                      )}
+                      
+                      <div className="flex items-center overflow-hidden mr-2 pl-2 transition-transform duration-200 ease-out group-hover:translate-x-[2px]">
+                        <MessageSquare className={cn("shrink-0 mr-3 transition-colors", isActive ? "text-[#8A5E4D]" : "text-slate-400 group-hover:text-slate-600")} size={18} />
+                        <span className={cn("text-sm truncate font-medium", isActive ? "text-[#111827] font-semibold" : "text-slate-600 group-hover:text-slate-900")}>{chat.title}</span>
+                      </div>
+                      <div 
+                        onClick={(e) => handleDeleteChat(e, chat.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-[#e4e2df]/30 rounded-md transition opacity-0 group-hover:opacity-100 relative z-10"
+                        title="Delete chat"
+                      >
+                        <Trash2 size={16} />
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </>
           ) : (
             documents.length === 0 ? (
-              <p className="text-sm text-muted text-center pt-8">No documents uploaded</p>
+              <p className="text-sm text-slate-400 text-center pt-8">No documents uploaded</p>
             ) : (
               documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border border-border bg-secondary/50 group hover:border-accent/30 transition">
-                  <div className="flex items-center space-x-3 overflow-hidden">
-                    <FileText className="text-accent shrink-0" size={18} />
-                    <span className="text-sm truncate font-medium text-primary">{doc.filename}</span>
+                <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl border border-[#e4e2df]/50 bg-white/60 hover:bg-white hover:border-[#8A5E4D]/40 shadow-[0_2px_8px_rgba(0,0,0,0.02)] group transition-all duration-200 ease-out">
+                  <div className="flex items-center space-x-3 overflow-hidden pl-1 transition-transform duration-200 ease-out group-hover:translate-x-[2px]">
+                    <FileText className="text-[#8A5E4D] shrink-0" size={18} />
+                    <span className="text-sm truncate font-medium text-slate-700 group-hover:text-slate-900">{doc.filename}</span>
                   </div>
                   <button 
                     onClick={() => handleDelete(doc.id, doc.filename)}
-                    className="p-1.5 text-muted hover:text-red-500 hover:bg-white rounded-md transition opacity-0 group-hover:opacity-100"
+                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-[#e4e2df]/30 rounded-md transition opacity-0 group-hover:opacity-100"
                     title="Delete document"
                   >
                     <Trash2 size={16} />
@@ -321,7 +341,7 @@ export default function App() {
         </div>
 
         {activeTab === 'documents' && (
-          <div className="p-4 border-t border-border bg-secondary/20 shrink-0">
+          <div className="p-4 border-t border-[#e4e2df]/60 bg-[#e4e2df]/10 shrink-0">
             <input 
               type="file" 
               accept=".pdf" 
@@ -332,7 +352,7 @@ export default function App() {
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
-              className="w-full py-2.5 px-4 bg-primary text-white rounded-lg font-medium flex items-center justify-center space-x-2 hover:bg-primary/90 transition disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full py-2.5 px-4 bg-[#8A5E4D] hover:bg-[#724D3E] text-white shadow-md shadow-[#8A5E4D]/10 rounded-lg font-medium flex items-center justify-center space-x-2 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isUploading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -362,7 +382,7 @@ export default function App() {
 
         {/* Chat History */}
         <div className="flex-1 overflow-y-auto scrollbar-hide">
-          <div className="w-full max-w-3xl mx-auto py-8 px-4 flex flex-col space-y-8">
+          <div className="w-full max-w-3xl mx-auto py-8 px-4 flex flex-col space-y-12">
             {messages.map((msg, idx) => (
               <div key={idx} className={cn("flex space-x-4 max-w-prose", msg.role === 'user' ? "ml-auto flex-row-reverse space-x-reverse" : "mr-auto")}>
                 <div className={cn(
@@ -374,7 +394,7 @@ export default function App() {
                 <div className={cn(
                   "px-5 py-3.5 rounded-2xl text-[15px] leading-relaxed",
                   msg.role === 'user' 
-                    ? "bg-[#f3f1e9] text-primary rounded-tr-sm" 
+                    ? "bg-[#F4F0EA] text-[#111827] rounded-tr-sm" 
                     : "bg-transparent text-primary"
                 )}>
                   {msg.role === 'user' ? (
@@ -424,14 +444,14 @@ export default function App() {
                   }
                 }}
                 placeholder="Ask Claude or anything about your contracts..."
-                className="w-full bg-[#f3f1e9] text-primary placeholder:text-muted rounded-2xl py-3.5 pl-5 pr-12 focus:outline-none focus:bg-[#f3f1e9] resize-none max-h-[200px] scrollbar-hide shadow-sm"
+                className="w-full bg-white text-[#111827] placeholder:text-muted/70 rounded-2xl py-3.5 pl-5 pr-12 focus:outline-none focus:bg-white resize-none max-h-[200px] scrollbar-hide shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)] border border-[#e4e2df]/50"
                 rows={1}
                 disabled={isLoading}
               />
               <button 
                 type="submit" 
                 disabled={!input.trim() || isLoading}
-                className="absolute right-3 mb-2.5 p-1.5 text-primary hover:bg-[#e4e2da] rounded-lg transition disabled:text-muted/40 disabled:hover:bg-transparent"
+                className="absolute right-3 mb-2.5 p-1.5 text-[#111827] hover:bg-[#F7F5F0] rounded-lg transition disabled:text-muted/40 disabled:hover:bg-transparent"
               >
                 <Send size={18} />
               </button>

@@ -19,3 +19,11 @@ body {
 #root {
   @apply h-full;
 }
+
+/* Stationery Typography overrides for premium crisp styling */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: #1F1F1F !important;
+  letter-spacing: -0.025em !important; /* tracking-tight */
+  font-weight: 700 !important;
+}
+
