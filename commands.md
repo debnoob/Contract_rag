@@ -1,0 +1,1 @@
+uvicorn contract_api:app --reload --port 8000
