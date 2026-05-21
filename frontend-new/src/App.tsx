@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Upload, FileText, Trash2, Bot, User, Menu, MessageSquare, Plus } from 'lucide-react';
+import { Send, Upload, FileText, Trash2, Bot, User, Menu, MessageSquare, Plus, Paperclip, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -13,9 +13,19 @@ function cn(...inputs: ClassValue[]) {
 
 const API_BASE = 'http://localhost:8000';
 
+type Source = {
+  chunk_id: string;
+  chunk_type: string;
+  section: string;
+  snippet: string;
+  filename?: string;
+  page?: string;
+};
+
 type Message = {
   role: 'user' | 'assistant';
   content: string;
+  sources?: Source[];
 };
 
 type Document = {
@@ -27,6 +37,68 @@ type Chat = {
   id: string;
   title: string;
 };
+
+// ── Source Attribution Footer Component ───────────────────────────────────────
+function SourceFooter({ sources, uniqueSources }: { sources: Source[]; uniqueSources: Source[] }) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+
+  const toggle = (i: number) => setOpenIdx(prev => (prev === i ? null : i));
+
+  // Primary attribution line — deduplicated filenames + pages
+  const attribution = uniqueSources
+    .filter(s => s.filename)
+    .map(s => [s.filename, s.page].filter(Boolean).join(' · '))
+    .filter(Boolean)
+    .join('  ·  ');
+
+  return (
+    <div className="mt-6 px-1 flex flex-col gap-2">
+      {/* Attribution line */}
+      {attribution && (
+        <div className="flex items-center gap-1.5 text-[11px] text-[#78716C] group cursor-default hover:text-[#262626] transition-colors duration-150">
+          <Paperclip size={11} className="shrink-0 opacity-70" />
+          <span className="tracking-wide">Sources: {attribution}</span>
+        </div>
+      )}
+
+      {/* Expandable chunk accordions */}
+      <div className="flex flex-col gap-1.5">
+        {sources.map((src, i) => (
+          <div key={src.chunk_id}>
+            {/* Citation pill button */}
+            <button
+              onClick={() => toggle(i)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#EFEBE4] text-[#3D3029] text-[11px] font-medium hover:bg-[#E5E0D8] transition-colors duration-150 group"
+              title={`${src.filename ?? 'source'} — ${src.section}`}
+            >
+              <span>[{i + 1}]</span>
+              {src.filename && (
+                <span className="text-[#78716C] font-normal truncate max-w-[120px]">{src.filename}</span>
+              )}
+              {src.page && <span className="text-[#78716C] font-normal">· {src.page}</span>}
+              <ChevronDown
+                size={11}
+                className={cn("transition-transform duration-200 text-[#78716C]", openIdx === i ? "rotate-180" : "")}
+              />
+            </button>
+
+            {/* Slide-down snippet panel */}
+            {openIdx === i && (
+              <div className="mt-1.5 pl-3 border-l-2 border-[#C9B89A] bg-[#EAE6DF] rounded-r-lg px-4 py-3 text-[13px] text-[#3D3029] leading-relaxed animate-[fadeIn_0.15s_ease-out]">
+                <p className="text-[10px] uppercase tracking-widest text-[#78716C] mb-2 font-medium">
+                  {src.chunk_type} · {src.section} {src.page ? `· ${src.page}` : ''}
+                </p>
+                <blockquote className="italic text-[#4A3E34]">
+                  "{src.snippet.trim()}"
+                </blockquote>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([
@@ -41,6 +113,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'chats' | 'documents'>('chats');
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [pendingUpload, setPendingUpload] = useState<File | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,9 +177,18 @@ export default function App() {
     if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) {
+      setPendingUpload(file);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleUploadConfirm = async (extractFeatures: boolean) => {
+    if (!pendingUpload) return;
+    const file = pendingUpload;
+    setPendingUpload(null);
 
     let chatId = currentChatId;
     if (!chatId) {
@@ -130,7 +212,10 @@ export default function App() {
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('chat_id', chatId);
+    if (chatId) {
+      formData.append('chat_id', chatId);
+    }
+    formData.append('extract_features', extractFeatures.toString());
 
     try {
       await axios.post(`${API_BASE}/api/upload`, formData);
@@ -141,7 +226,6 @@ export default function App() {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I failed to upload that document.' }]);
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -209,8 +293,9 @@ export default function App() {
 
       const res = await axios.post(`${API_BASE}/api/query`, { query: userMsg, chat_id: chatId });
       const assistantMsg = res.data.answer;
+      const sources: Source[] = res.data.sources || [];
       
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantMsg }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: assistantMsg, sources }]);
 
       if (chatId) {
         await supabase.from('messages').insert({
@@ -347,7 +432,7 @@ export default function App() {
               accept=".pdf" 
               className="hidden" 
               ref={fileInputRef}
-              onChange={handleUpload}
+              onChange={handleFileSelect}
             />
             <button 
               onClick={() => fileInputRef.current?.click()}
@@ -391,21 +476,34 @@ export default function App() {
                 )}>
                   {msg.role === 'user' ? <User size={16} /> : <Bot size={24} />}
                 </div>
-                <div className={cn(
-                  "px-5 py-3.5 rounded-2xl text-[15px] leading-relaxed",
-                  msg.role === 'user' 
-                    ? "bg-[#F4F0EA] text-[#111827] rounded-tr-sm" 
-                    : "bg-transparent text-primary"
-                )}>
-                  {msg.role === 'user' ? (
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-                  ) : (
-                    <div className="prose prose-sm md:prose-base prose-neutral max-w-none prose-p:leading-relaxed prose-pre:bg-secondary prose-pre:text-primary prose-a:text-accent hover:prose-a:text-accentHover">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
-                  )}
+                <div className="flex flex-col gap-0">
+                  <div className={cn(
+                    "px-5 py-3.5 rounded-2xl text-[15px] leading-relaxed",
+                    msg.role === 'user' 
+                      ? "bg-[#F4F0EA] text-[#111827] rounded-tr-sm" 
+                      : "bg-transparent text-primary"
+                  )}>
+                    {msg.role === 'user' ? (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    ) : (
+                      <div className="prose prose-sm md:prose-base prose-neutral max-w-none prose-p:leading-relaxed prose-pre:bg-secondary prose-pre:text-primary prose-a:text-accent hover:prose-a:text-accentHover">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Source Attribution — only for assistant messages with sources */}
+                  {msg.role === 'assistant' && msg.sources && msg.sources.length > 0 && (() => {
+                    // Deduplicate sources by filename+page
+                    const uniqueSources = msg.sources!.filter((s, i, arr) =>
+                      arr.findIndex(x => x.filename === s.filename && x.page === s.page) === i
+                    );
+                    return (
+                      <SourceFooter sources={msg.sources!} uniqueSources={uniqueSources} />
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -456,11 +554,6 @@ export default function App() {
                 <Send size={18} />
               </button>
             </form>
-            <div className="text-center mt-3">
-              <span className="text-[12px] text-muted tracking-wide font-serif italic">
-                Claude can make mistakes. Please double-check responses.
-              </span>
-            </div>
           </div>
         </div>
       </main>
@@ -471,6 +564,42 @@ export default function App() {
           className="md:hidden fixed inset-0 bg-primary/20 backdrop-blur-sm z-10"
           onClick={() => setSidebarOpen(false)}
         />
+      )}
+
+      {/* Feature Extraction Modal */}
+      {pendingUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-[#F7F5F0] rounded-2xl shadow-2xl w-full max-w-[420px] overflow-hidden animate-[fadeIn_0.2s_ease-out] border border-[#e4e2df]">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-[#111827] mb-3">Extract Document Features?</h3>
+              <p className="text-[15px] leading-relaxed text-slate-600 mb-6">
+                Would you like to automatically extract contract features (like clauses, dates, and amounts) and generate an Excel summary? 
+                <br/><br/>
+                Choosing <strong>'No'</strong> will directly process the document for chat embedding only.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setPendingUpload(null)}
+                  className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-800 bg-transparent hover:bg-slate-200/50 rounded-xl transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleUploadConfirm(false)}
+                  className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-[#e4e2df] hover:border-slate-300 shadow-sm rounded-xl transition-all duration-200"
+                >
+                  No, Just Embed
+                </button>
+                <button
+                  onClick={() => handleUploadConfirm(true)}
+                  className="px-4 py-2.5 text-sm font-medium text-white bg-[#8A5E4D] hover:bg-[#724D3E] shadow-md shadow-[#8A5E4D]/20 rounded-xl transition-all duration-200"
+                >
+                  Yes, Extract Features
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
